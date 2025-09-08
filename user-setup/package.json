@@ -5,8 +5,7 @@
   "main": "src/main.js",
   "type": "module",
   "scripts": {
-    "format": "prettier --write .",
-    "start": "node src/main.js"
+    "format": "prettier --write ."
   },
   "dependencies": {
     "node-appwrite": "^14.1.0"

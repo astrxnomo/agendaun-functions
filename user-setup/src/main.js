@@ -120,8 +120,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Clase Programación (Ejemplo)",
         description: "Ejemplo de clase - Introducción a Python. Agrega aquí tus horarios de clases reales.",
-        start: createDateWithTime(tomorrow, 8, 0).toISOString(), // 8:00 AM
-        end: createDateWithTime(tomorrow, 10, 0).toISOString(), // 10:00 AM
+        start: new Date(tomorrow.getTime() + 10 * 60 * 60 * 1000).toISOString(),
+        end: new Date(tomorrow.getTime() + 13 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         location: "Aula de Informática 205",
         calendar: calendar.$id,
@@ -130,8 +130,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Entrega Quiz Matemáticas (Ejemplo)",
         description: "Ejemplo de quiz rápido - 30 minutos. Reemplaza con tus evaluaciones reales.",
-        start: createDateWithTime(tomorrow, 11, 0).toISOString(), // 11:00 AM
-        end: createDateWithTime(tomorrow, 11, 30).toISOString(), // 11:30 AM
+        start: new Date(tomorrow.getTime() + 14 * 60 * 60 * 1000).toISOString(),
+        end: new Date(tomorrow.getTime() + 14.5 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         location: "Aula 302",
         calendar: calendar.$id,
@@ -140,8 +140,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Tarea Física (Ejemplo)",
         description: "Ejemplo de tarea - Resolver ejercicios del capítulo 5. Reemplaza con tus tareas reales.",
-        start: createDateWithTime(dayAfterTomorrow, 10, 0).toISOString(), // 10:00 AM
-        end: createDateWithTime(dayAfterTomorrow, 11, 0).toISOString(), // 11:00 AM
+        start: new Date(dayAfterTomorrow.getTime() + 14 * 60 * 60 * 1000).toISOString(),
+        end: new Date(dayAfterTomorrow.getTime() + 15 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         calendar: calendar.$id,
         etiquette: etiquettes[1].$id, // Tareas
@@ -149,8 +149,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Laboratorio Química (Ejemplo)",
         description: "Ejemplo de laboratorio - Práctica de titulación. Personaliza con tus horarios.",
-        start: createDateWithTime(dayAfterTomorrow, 12, 0).toISOString(), // 12:00 PM
-        end: createDateWithTime(dayAfterTomorrow, 13, 0).toISOString(), // 1:00 PM
+        start: new Date(dayAfterTomorrow.getTime() + 16 * 60 * 60 * 1000).toISOString(),
+        end: new Date(dayAfterTomorrow.getTime() + 17 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         location: "Laboratorio 101",
         calendar: calendar.$id,
@@ -159,8 +159,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Parcial Cálculo Diferencial (Ejemplo)",
         description: "Ejemplo de parcial - Temas: Derivadas y aplicaciones. Personaliza con tus materias y fechas reales.",
-        start: createDateWithTime(threeDaysLater, 8, 0).toISOString(), // 8:00 AM
-        end: createDateWithTime(threeDaysLater, 10, 0).toISOString(), // 10:00 AM
+        start: new Date(threeDaysLater.getTime() + 11 * 60 * 60 * 1000).toISOString(),
+        end: new Date(threeDaysLater.getTime() + 13 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         location: "Aula 101 - Edificio de Matemáticas",
         calendar: calendar.$id,
@@ -169,8 +169,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Revisar Correos UN (Ejemplo)",
         description: "Ejemplo de tarea corta - Revisar correo institucional. Personaliza con tus actividades.",
-        start: createDateWithTime(threeDaysLater, 11, 0).toISOString(), // 11:00 AM
-        end: createDateWithTime(threeDaysLater, 11, 15).toISOString(), // 11:15 AM
+        start: new Date(threeDaysLater.getTime() + 14 * 60 * 60 * 1000).toISOString(),
+        end: new Date(threeDaysLater.getTime() + 14.25 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         calendar: calendar.$id,
         etiquette: etiquettes[1].$id, // Tareas
@@ -178,8 +178,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Entrega Ensayo Historia (Ejemplo)",
         description: "Ejemplo de entrega - Ensayo sobre la Independencia. Reemplaza con tus trabajos.",
-        start: createDateWithTime(fourDaysLater, 9, 0).toISOString(), // 9:00 AM
-        end: createDateWithTime(fourDaysLater, 9, 30).toISOString(), // 9:30 AM
+        start: new Date(fourDaysLater.getTime() + 12 * 60 * 60 * 1000).toISOString(),
+        end: new Date(fourDaysLater.getTime() + 12.5 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         location: "Oficina Profesores",
         calendar: calendar.$id,
@@ -188,9 +188,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Entrega Proyecto Final (Ejemplo)",
         description: "Ejemplo de fecha límite para entregar proyecto final. Recordar subir a la plataforma virtual. Puedes editar este evento con tus propias fechas.",
-        start: createDateWithTime(fourDaysLater, 12, 0).toISOString(), // 12:00 PM
-        end: createDateWithTime(fourDaysLater, 13, 0).toISOString(), // 1:00 PM
-        all_day: false,
+        start: new Date(fourDaysLater.getTime() + 16 * 60 * 60 * 1000).toISOString(),
+        end: new Date(fourDaysLater.getTime() + 17 * 60 * 60 * 1000).toISOString(),
         calendar: calendar.$id,
         etiquette: etiquettes[2].$id, // Proyectos
       },

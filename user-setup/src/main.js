@@ -1,4 +1,4 @@
-import { Client, Databases, ID } from "node-appwrite"
+import { Client, Databases, ID, Permission, Role } from "node-appwrite"
 
 // Constantes para colores y vistas predefinidas
 const Colors = {
@@ -95,7 +95,12 @@ export default async ({ req, res, log, error }) => {
           DATABASE_ID,
           ETIQUETTES_COLLECTION_ID,
           ID.unique(),
-          data
+          data,
+          [
+            Permission.read(Role.user(userId)),
+            Permission.update(Role.user(userId)),
+            Permission.delete(Role.user(userId))
+          ]
         )
       )
     )
@@ -145,7 +150,12 @@ export default async ({ req, res, log, error }) => {
           DATABASE_ID,
           EVENTS_COLLECTION_ID,
           ID.unique(),
-          data
+          data,
+          [
+            Permission.read(Role.user(userId)),
+            Permission.update(Role.user(userId)),
+            Permission.delete(Role.user(userId))
+          ]
         )
       )
     )

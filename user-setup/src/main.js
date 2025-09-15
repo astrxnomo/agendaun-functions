@@ -99,10 +99,9 @@ export default async ({ req, res, log, error }) => {
     const fourDaysLater = new Date(now)
     fourDaysLater.setDate(now.getDate() + 4)
 
-    // Función para crear fecha con hora específica
     const createDateWithTime = (baseDate, hours, minutes = 0) => {
       const date = new Date(baseDate)
-      date.setHours(hours, minutes, 0, 0)
+      date.setHours(hours + 5, minutes, 0, 0) 
       return date
     }
 

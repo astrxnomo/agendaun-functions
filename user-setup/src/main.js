@@ -104,7 +104,7 @@ export default async ({ req, res, log, error }) => {
         all_day: false,
         location: "Campus UN",
         calendar: calendar.$id,
-        etiquette: etiquettes[6].$id, // Personal
+        etiquette: etiquettes[4].$id, // Personal
       },
       {
         title: "Clase Programación (Ejemplo)",

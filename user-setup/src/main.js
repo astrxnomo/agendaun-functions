@@ -1,8 +1,9 @@
 import { Client, Databases, ID } from "node-appwrite"
 
+// Constantes para colores y vistas predefinidas
 const Colors = {
   GRAY: "gray",
-  BLUE: "blue",
+  BLUE: "blue", 
   RED: "red",
   GREEN: "green",
   PURPLE: "purple",
@@ -15,17 +16,17 @@ const Colors = {
 
 const DefaultView = {
   AGENDA: "agenda",
-  MONTH: "month",
+  MONTH: "month", 
   WEEK: "week",
   DAY: "day",
 }
 
-const client = new Client()
-  .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT ?? "")
-  .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID ?? "")
-  .setKey(process.env.APPWRITE_API_KEY ?? "")
-
-const databases = new Databases(client)
+const setupClient = (req) => {
+  return new Client()
+    .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT)
+    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
+    .setKey(req.headers['x-appwrite-key'] || process.env.APPWRITE_API_KEY)
+}
 
 const DATABASE_ID = process.env.APPWRITE_DATABASE_ID
 const PROFILES_COLLECTION_ID = process.env.APPWRITE_PROFILES_COLLECTION_ID
@@ -33,90 +34,75 @@ const CALENDARS_COLLECTION_ID = process.env.APPWRITE_CALENDARS_COLLECTION_ID
 const ETIQUETTES_COLLECTION_ID = process.env.APPWRITE_ETIQUETTES_COLLECTION_ID
 const EVENTS_COLLECTION_ID = process.env.APPWRITE_EVENTS_COLLECTION_ID
 
-const setupUser = async ({ req, res, log, error }) => {
+export default async ({ req, res, log, error }) => {
   try {
-    if (!DATABASE_ID) {
-      throw new Error("DATABASE_ID no está configurado")
-    }
+    const client = setupClient(req)
+    const databases = new Databases(client)
     
-    const payload = JSON.parse(req.body || "{}")
+    const payload = req.bodyJson || {}
+    
+    log(`Configuración inicial completada`)
+    log(`Trigger:`, req.headers['x-appwrite-trigger'])
+    
     const userId = payload.userId || payload.$id
-
+    
     if (!userId) {
       error("No se proporcionó userId en el evento")
       return res.json({
         success: false,
         error: "No userId provided in event",
-      })
+      }, 400)
     }
 
     log(`Configurando usuario: ${userId}`)
-    log(`Usando database: ${DATABASE_ID}`)
 
-    const profileData = {
-      user_id: userId,
-    }
-
-    const profile = await databases.createDocument({
-      databaseId: DATABASE_ID,
-      collectionId: PROFILES_COLLECTION_ID,
-      documentId: ID.unique(),
-      data: profileData,
-    })
+    // 1. Crear perfil del usuario
+    const profile = await databases.createDocument(
+      DATABASE_ID,
+      PROFILES_COLLECTION_ID,
+      ID.unique(),
+      { user_id: userId }
+    )
 
     log(`Perfil creado: ${profile.$id}`)
 
-    const calendarData = {
-      name: "Mi Calendario Personal",
-      slug: `personal-${userId}`,
-      defaultView: DefaultView.MONTH,
-      requireConfig: false,
-      profile: profile.$id,
-    }
-
-    const calendar = await databases.createDocument({
-      databaseId: DATABASE_ID,
-      collectionId: CALENDARS_COLLECTION_ID,
-      documentId: ID.unique(),
-      data: calendarData,
-    })
+    // 2. Crear calendario personal
+    const calendar = await databases.createDocument(
+      DATABASE_ID,
+      CALENDARS_COLLECTION_ID,
+      ID.unique(),
+      {
+        name: "Mi Calendario Personal",
+        slug: `personal-${userId}`,
+        defaultView: DefaultView.MONTH,
+        requireConfig: false,
+        profile: profile.$id,
+      }
+    )
 
     log(`Calendario creado: ${calendar.$id}`)
 
+    // 3. Crear etiquetas predeterminadas
     const etiquettesData = [
-      {
-        name: "Personal",
-        color: Colors.BLUE,
-        isActive: true,
-        calendar: calendar.$id,
-      },
-      {
-        name: "Trabajo",
-        color: Colors.RED,
-        isActive: true,
-        calendar: calendar.$id,
-      },
-      {
-        name: "Estudios",
-        color: Colors.GREEN,
-        isActive: true,
-        calendar: calendar.$id,
-      },
+      { name: "Personal", color: Colors.BLUE, isActive: true, calendar: calendar.$id },
+      { name: "Trabajo", color: Colors.RED, isActive: true, calendar: calendar.$id },
+      { name: "Estudios", color: Colors.GREEN, isActive: true, calendar: calendar.$id },
     ]
 
-    const createdEtiquettes = []
-    for (const etiquetteData of etiquettesData) {
-      const etiquette = await databases.createDocument({
-        databaseId: DATABASE_ID,
-        collectionId: ETIQUETTES_COLLECTION_ID,
-        documentId: ID.unique(),
-        data: etiquetteData,
-        permissions: [`read("user:${userId}")`, `update("user:${userId}")`, `delete("user:${userId}")`],
-      })
-      createdEtiquettes.push(etiquette)
-      log(`Etiqueta creada: ${etiquette.name}`)
-    }
+    const etiquettes = await Promise.all(
+      etiquettesData.map(data => 
+        databases.createDocument(
+          DATABASE_ID,
+          ETIQUETTES_COLLECTION_ID,
+          ID.unique(),
+          data
+        )
+      )
+    )
 
+    log(`Etiquetas creadas: ${etiquettes.length}`)
+
+    // 4. Crear eventos de ejemplo
     const now = new Date()
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -124,14 +110,13 @@ const setupUser = async ({ req, res, log, error }) => {
     const eventsData = [
       {
         title: "¡Bienvenido a AgendaUN!",
-        description:
-          "Este es un evento de ejemplo. Puedes editarlo o eliminarlo desde tu calendario.",
+        description: "Este es un evento de ejemplo. Puedes editarlo o eliminarlo desde tu calendario.",
         start: now.toISOString(),
         end: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         location: "Campus Universidad",
         calendar: calendar.$id,
-        etiquette: createdEtiquettes[0].$id,
+        etiquette: etiquettes[0].$id,
       },
       {
         title: "Evento de todo el día",
@@ -140,33 +125,32 @@ const setupUser = async ({ req, res, log, error }) => {
         end: tomorrow.toISOString(),
         all_day: true,
         calendar: calendar.$id,
-        etiquette: createdEtiquettes[1].$id,
+        etiquette: etiquettes[1].$id,
       },
       {
         title: "Reunión de trabajo",
         description: "Ejemplo de evento de trabajo con duración específica",
-        start: new Date(nextWeek.getTime() + 9 * 60 * 60 * 1000).toISOString(), // 9 AM
-        end: new Date(nextWeek.getTime() + 10 * 60 * 60 * 1000).toISOString(), // 10 AM
+        start: new Date(nextWeek.getTime() + 9 * 60 * 60 * 1000).toISOString(),
+        end: new Date(nextWeek.getTime() + 10 * 60 * 60 * 1000).toISOString(),
         all_day: false,
         location: "Sala de reuniones",
         calendar: calendar.$id,
-        etiquette: createdEtiquettes[2].$id,
+        etiquette: etiquettes[2].$id,
       },
     ]
 
-    const createdEvents = []
-    for (const eventData of eventsData) {
-      const event = await databases.createDocument({
-        databaseId: DATABASE_ID,
-        collectionId: EVENTS_COLLECTION_ID,
-        documentId: ID.unique(),
-        data: eventData,
-        permissions: [`read("user:${userId}")`, `update("user:${userId}")`, `delete("user:${userId}")`],
-      })
-      createdEvents.push(event)
-      log(`Evento creado: ${event.title}`)
-    }
+    const events = await Promise.all(
+      eventsData.map(data => 
+        databases.createDocument(
+          DATABASE_ID,
+          EVENTS_COLLECTION_ID,
+          ID.unique(),
+          data
+        )
+      )
+    )
 
+    log(`Eventos creados: ${events.length}`)
     log(`Usuario ${userId} configurado exitosamente`)
 
     return res.json({
@@ -175,19 +159,16 @@ const setupUser = async ({ req, res, log, error }) => {
       data: {
         profileId: profile.$id,
         calendarId: calendar.$id,
-        etiquettesCount: createdEtiquettes.length,
-        eventsCount: createdEvents.length,
+        etiquettesCount: etiquettes.length,
+        eventsCount: events.length,
       },
     })
+
   } catch (err) {
     error(`Error configurando usuario: ${err.message}`)
-    log(`Stack trace: ${err.stack}`)
     return res.json({
       success: false,
       error: err.message,
-      details: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    })
+    }, 500)
   }
 }
-
-export default setupUser

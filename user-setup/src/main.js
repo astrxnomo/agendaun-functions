@@ -1,4 +1,4 @@
-import { Client, ID, TablesDB } from "node-appwrite"
+import { Client, Databases, ID } from "node-appwrite"
 
 const Colors = {
   GRAY: "gray",
@@ -25,16 +25,20 @@ const client = new Client()
   .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID ?? "")
   .setKey(process.env.APPWRITE_API_KEY ?? "")
 
-const tablesDB = new TablesDB(client)
+const databases = new Databases(client)
 
 const DATABASE_ID = process.env.APPWRITE_DATABASE_ID
-const PROFILES_TABLE_ID = process.env.APPWRITE_PROFILES_TABLE_ID
-const CALENDARS_TABLE_ID = process.env.APPWRITE_CALENDARS_TABLE_ID
-const ETIQUETTES_TABLE_ID = process.env.APPWRITE_ETIQUETTES_TABLE_ID
-const EVENTS_TABLE_ID = process.env.APPWRITE_EVENTS_TABLE_ID
+const PROFILES_COLLECTION_ID = process.env.APPWRITE_PROFILES_COLLECTION_ID
+const CALENDARS_COLLECTION_ID = process.env.APPWRITE_CALENDARS_COLLECTION_ID
+const ETIQUETTES_COLLECTION_ID = process.env.APPWRITE_ETIQUETTES_COLLECTION_ID
+const EVENTS_COLLECTION_ID = process.env.APPWRITE_EVENTS_COLLECTION_ID
 
 const setupUser = async ({ req, res, log, error }) => {
   try {
+    if (!DATABASE_ID) {
+      throw new Error("DATABASE_ID no está configurado")
+    }
+    
     const payload = JSON.parse(req.body || "{}")
     const userId = payload.userId || payload.$id
 
@@ -47,18 +51,16 @@ const setupUser = async ({ req, res, log, error }) => {
     }
 
     log(`Configurando usuario: ${userId}`)
+    log(`Usando database: ${DATABASE_ID}`)
 
     const profileData = {
       user_id: userId,
-      sede: null,
-      faculty: null,
-      program: null,
     }
 
-    const profile = await tablesDB.createRow({
+    const profile = await databases.createDocument({
       databaseId: DATABASE_ID,
-      tableId: PROFILES_TABLE_ID,
-      rowId: ID.unique(),
+      collectionId: PROFILES_COLLECTION_ID,
+      documentId: ID.unique(),
       data: profileData,
     })
 
@@ -72,10 +74,10 @@ const setupUser = async ({ req, res, log, error }) => {
       profile: profile.$id,
     }
 
-    const calendar = await tablesDB.createRow({
+    const calendar = await databases.createDocument({
       databaseId: DATABASE_ID,
-      tableId: CALENDARS_TABLE_ID,
-      rowId: ID.unique(),
+      collectionId: CALENDARS_COLLECTION_ID,
+      documentId: ID.unique(),
       data: calendarData,
     })
 
@@ -104,11 +106,12 @@ const setupUser = async ({ req, res, log, error }) => {
 
     const createdEtiquettes = []
     for (const etiquetteData of etiquettesData) {
-      const etiquette = await tablesDB.createRow({
+      const etiquette = await databases.createDocument({
         databaseId: DATABASE_ID,
-        tableId: ETIQUETTES_TABLE_ID,
-        rowId: ID.unique(),
+        collectionId: ETIQUETTES_COLLECTION_ID,
+        documentId: ID.unique(),
         data: etiquetteData,
+        permissions: [`read("user:${userId}")`, `update("user:${userId}")`, `delete("user:${userId}")`],
       })
       createdEtiquettes.push(etiquette)
       log(`Etiqueta creada: ${etiquette.name}`)
@@ -153,11 +156,12 @@ const setupUser = async ({ req, res, log, error }) => {
 
     const createdEvents = []
     for (const eventData of eventsData) {
-      const event = await tablesDB.createRow({
+      const event = await databases.createDocument({
         databaseId: DATABASE_ID,
-        tableId: EVENTS_TABLE_ID,
-        rowId: ID.unique(),
+        collectionId: EVENTS_COLLECTION_ID,
+        documentId: ID.unique(),
         data: eventData,
+        permissions: [`read("user:${userId}")`, `update("user:${userId}")`, `delete("user:${userId}")`],
       })
       createdEvents.push(event)
       log(`Evento creado: ${event.title}`)
@@ -177,9 +181,11 @@ const setupUser = async ({ req, res, log, error }) => {
     })
   } catch (err) {
     error(`Error configurando usuario: ${err.message}`)
+    log(`Stack trace: ${err.stack}`)
     return res.json({
       success: false,
       error: err.message,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     })
   }
 }

@@ -1,26 +1,5 @@
 import { Client, Databases, ID, Permission, Role } from "node-appwrite"
 
-// Constantes para colores y vistas predefinidas
-const Colors = {
-  GRAY: "gray",
-  BLUE: "blue", 
-  RED: "red",
-  GREEN: "green",
-  PURPLE: "purple",
-  ORANGE: "orange",
-  PINK: "pink",
-  TEAL: "teal",
-  YELLOW: "yellow",
-  LIME: "lime",
-}
-
-const DefaultView = {
-  AGENDA: "agenda",
-  MONTH: "month", 
-  WEEK: "week",
-  DAY: "day",
-}
-
 const setupClient = (req) => {
   return new Client()
     .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT)
@@ -72,9 +51,9 @@ export default async ({ req, res, log, error }) => {
       CALENDARS_COLLECTION_ID,
       ID.unique(),
       {
-        name: "Mi Calendario Personal",
+        name: "Mi Calendario",
         slug: `personal-${userId}`,
-        defaultView: DefaultView.MONTH,
+        defaultView: "week",
         requireConfig: false,
         profile: profile.$id,
       }
@@ -82,11 +61,13 @@ export default async ({ req, res, log, error }) => {
 
     log(`Calendario creado: ${calendar.$id}`)
 
-    // 3. Crear etiquetas predeterminadas
+    // 3. Crear etiquetas predeterminadas para estudiante UN
     const etiquettesData = [
-      { name: "Personal", color: Colors.BLUE, isActive: true, calendar: calendar.$id },
-      { name: "Trabajo", color: Colors.RED, isActive: true, calendar: calendar.$id },
-      { name: "Estudios", color: Colors.GREEN, isActive: true, calendar: calendar.$id },
+      { name: "Clases", color: "blue", isActive: true, calendar: calendar.$id },
+      { name: "Tareas", color: "orange", isActive: true, calendar: calendar.$id },
+      { name: "Proyectos", color: "purple", isActive: true, calendar: calendar.$id },
+      { name: "Parciales", color: "red", isActive: true, calendar: calendar.$id },
+      { name: "Personal", color: "green", isActive: true, calendar: calendar.$id },
     ]
 
     const etiquettes = await Promise.all(
@@ -110,37 +91,58 @@ export default async ({ req, res, log, error }) => {
     // 4. Crear eventos de ejemplo
     const now = new Date()
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    const dayAfterTomorrow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000)
+    const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+    const fourDaysLater = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000)
 
     const eventsData = [
       {
         title: "¡Bienvenido a AgendaUN!",
-        description: "Este es un evento de ejemplo. Puedes editarlo o eliminarlo desde tu calendario.",
+        description: "Tu calendario académico está listo. Organiza tus clases, tareas y parciales de la Universidad Nacional. Este es un evento de ejemplo que puedes editar o eliminar.",
         start: now.toISOString(),
-        end: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+        end: new Date(now.getTime() + 1 * 60 * 60 * 1000).toISOString(),
         all_day: false,
-        location: "Campus Universidad",
+        location: "Campus UN",
         calendar: calendar.$id,
-        etiquette: etiquettes[0].$id,
+        etiquette: etiquettes[6].$id, // Personal
       },
       {
-        title: "Evento de todo el día",
-        description: "Ejemplo de evento que dura todo el día",
-        start: tomorrow.toISOString(),
-        end: tomorrow.toISOString(),
+        title: "Clase Programación (Ejemplo)",
+        description: "Ejemplo de clase - Introducción a Python. Agrega aquí tus horarios de clases reales.",
+        start: new Date(tomorrow.getTime() + 14 * 60 * 60 * 1000).toISOString(),
+        end: new Date(tomorrow.getTime() + 16 * 60 * 60 * 1000).toISOString(),
+        all_day: false,
+        location: "Aula de Informática 205",
+        calendar: calendar.$id,
+        etiquette: etiquettes[0].$id, // Clases
+      },
+      {
+        title: "Tarea Física (Ejemplo)",
+        description: "Ejemplo de tarea - Resolver ejercicios del capítulo 5. Reemplaza con tus tareas reales.",
+        start: dayAfterTomorrow.toISOString(),
+        end: new Date(dayAfterTomorrow.getTime() + 23 * 60 * 60 * 1000).toISOString(),
         all_day: true,
         calendar: calendar.$id,
-        etiquette: etiquettes[1].$id,
+        etiquette: etiquettes[1].$id, // Tareas
       },
       {
-        title: "Reunión de trabajo",
-        description: "Ejemplo de evento de trabajo con duración específica",
-        start: new Date(nextWeek.getTime() + 9 * 60 * 60 * 1000).toISOString(),
-        end: new Date(nextWeek.getTime() + 10 * 60 * 60 * 1000).toISOString(),
+        title: "Parcial Cálculo Diferencial (Ejemplo)",
+        description: "Ejemplo de parcial - Temas: Derivadas y aplicaciones. Personaliza con tus materias y fechas reales.",
+        start: new Date(threeDaysLater.getTime() + 8 * 60 * 60 * 1000).toISOString(),
+        end: new Date(threeDaysLater.getTime() + 10 * 60 * 60 * 1000).toISOString(),
         all_day: false,
-        location: "Sala de reuniones",
+        location: "Aula 101 - Edificio de Matemáticas",
         calendar: calendar.$id,
-        etiquette: etiquettes[2].$id,
+        etiquette: etiquettes[3].$id, // Parciales
+      },
+      {
+        title: "Entrega Proyecto Final (Ejemplo)",
+        description: "Ejemplo de fecha límite para entregar proyecto final. Recordar subir a la plataforma virtual. Puedes editar este evento con tus propias fechas.",
+        start: fourDaysLater.toISOString(),
+        end: new Date(fourDaysLater.getTime() + 23 * 60 * 60 * 1000).toISOString(),
+        all_day: true,
+        calendar: calendar.$id,
+        etiquette: etiquettes[2].$id, // Proyectos
       },
     ]
 

@@ -56,7 +56,10 @@ export default async ({ req, res, log, error }) => {
         defaultView: "week",
         requireConfig: false,
         profile: profile.$id,
-      }
+      },
+      [
+        Permission.read(Role.user(userId)),
+      ]
     )
 
     log(`Calendario creado: ${calendar.$id}`)
@@ -79,8 +82,7 @@ export default async ({ req, res, log, error }) => {
           data,
           [
             Permission.read(Role.user(userId)),
-            Permission.update(Role.user(userId)),
-            Permission.delete(Role.user(userId))
+            Permission.write(Role.user(userId)),
           ]
         )
       )
@@ -203,8 +205,7 @@ export default async ({ req, res, log, error }) => {
           data,
           [
             Permission.read(Role.user(userId)),
-            Permission.update(Role.user(userId)),
-            Permission.delete(Role.user(userId))
+            Permission.write(Role.user(userId)),
           ]
         )
       )

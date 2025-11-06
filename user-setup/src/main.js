@@ -106,11 +106,12 @@ export default async ({ req, res, log, error }) => {
     const monday = new Date(today)
     monday.setDate(today.getDate() + daysToMonday)
     
-    // Función para crear fecha en la semana actual con hora específica
+    // Función para crear fecha en la semana actual con hora específica en UTC-5
     const createWeekDate = (daysFromMonday, hours, minutes = 0) => {
       const date = new Date(monday)
       date.setDate(monday.getDate() + daysFromMonday)
-      date.setHours(hours, minutes, 0, 0)
+      // Ajustar a UTC-5: agregar 5 horas para que al convertir a UTC quede en Colombia
+      date.setHours(hours + 5, minutes, 0, 0)
       return date
     }
 

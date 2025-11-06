@@ -1,4 +1,4 @@
-import { Client, Databases, ID, Permission, Role } from "node-appwrite"
+import { Client, ID, Permission, Role, TablesDB, Users } from "node-appwrite"
 
 const setupClient = (req) => {
   return new Client()
@@ -8,15 +8,16 @@ const setupClient = (req) => {
 }
 
 const DATABASE_ID = process.env.APPWRITE_DATABASE_ID
-const PROFILES_COLLECTION_ID = process.env.APPWRITE_PROFILES_COLLECTION_ID
-const CALENDARS_COLLECTION_ID = process.env.APPWRITE_CALENDARS_COLLECTION_ID
-const ETIQUETTES_COLLECTION_ID = process.env.APPWRITE_ETIQUETTES_COLLECTION_ID
-const EVENTS_COLLECTION_ID = process.env.APPWRITE_EVENTS_COLLECTION_ID
+const PROFILES_TABLE_ID = process.env.APPWRITE_PROFILES_TABLE_ID
+const CALENDARS_TABLE_ID = process.env.APPWRITE_CALENDARS_TABLE_ID
+const ETIQUETTES_TABLE_ID = process.env.APPWRITE_ETIQUETTES_TABLE_ID
+const CALENDAR_EVENTS_TABLE_ID = process.env.APPWRITE_CALENDAR_EVENTS_TABLE_ID
 
 export default async ({ req, res, log, error }) => {
   try {
     const client = setupClient(req)
-    const databases = new Databases(client)
+    const databases = new TablesDB(client)
+    const users = new Users(client)
     
     const payload = req.bodyJson || {}
     
@@ -35,20 +36,27 @@ export default async ({ req, res, log, error }) => {
 
     log(`Configurando usuario: ${userId}`)
 
+    // Obtener información del usuario para el email
+    const user = await users.get(userId)
+    const userEmail = user.email
+
     // 1. Crear perfil del usuario
-    const profile = await databases.createDocument(
+    const profile = await databases.createRow(
       DATABASE_ID,
-      PROFILES_COLLECTION_ID,
+      PROFILES_TABLE_ID,
       ID.unique(),
-      { user_id: userId }
+      { 
+        user_id: userId,
+        email: userEmail
+      }
     )
 
     log(`Perfil creado: ${profile.$id}`)
 
     // 2. Crear calendario personal
-    const calendar = await databases.createDocument(
+    const calendar = await databases.createRow(
       DATABASE_ID,
-      CALENDARS_COLLECTION_ID,
+      CALENDARS_TABLE_ID,
       ID.unique(),
       {
         name: "Mi Calendario",
@@ -75,9 +83,9 @@ export default async ({ req, res, log, error }) => {
 
     const etiquettes = await Promise.all(
       etiquettesData.map(data => 
-        databases.createDocument(
+        databases.createRow(
           DATABASE_ID,
-          ETIQUETTES_COLLECTION_ID,
+          ETIQUETTES_TABLE_ID,
           ID.unique(),
           data,
           [
@@ -90,20 +98,19 @@ export default async ({ req, res, log, error }) => {
 
     log(`Etiquetas creadas: ${etiquettes.length}`)
 
-    // 4. Crear eventos de ejemplo
-    const now = new Date()
-    const tomorrow = new Date(now)
-    tomorrow.setDate(now.getDate() + 1)
-    const dayAfterTomorrow = new Date(now)
-    dayAfterTomorrow.setDate(now.getDate() + 2)
-    const threeDaysLater = new Date(now)
-    threeDaysLater.setDate(now.getDate() + 3)
-    const fourDaysLater = new Date(now)
-    fourDaysLater.setDate(now.getDate() + 4)
-
-    const createDateWithTime = (baseDate, hours, minutes = 0) => {
-      const date = new Date(baseDate)
-      date.setHours(hours + 5, minutes, 0, 0) 
+    // 4. Crear eventos de ejemplo en la semana actual
+    // Calcular el lunes de la semana actual
+    const today = new Date()
+    const currentDay = today.getDay() // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+    const daysToMonday = currentDay === 0 ? -6 : 1 - currentDay
+    const monday = new Date(today)
+    monday.setDate(today.getDate() + daysToMonday)
+    
+    // Función para crear fecha en la semana actual con hora específica
+    const createWeekDate = (daysFromMonday, hours, minutes = 0) => {
+      const date = new Date(monday)
+      date.setDate(monday.getDate() + daysFromMonday)
+      date.setHours(hours, minutes, 0, 0)
       return date
     }
 
@@ -111,38 +118,28 @@ export default async ({ req, res, log, error }) => {
       {
         title: "¡Bienvenido a AgendaUN!",
         description: "Tu calendario académico está listo. Organiza tus clases, tareas y parciales de la Universidad Nacional. Este es un evento de ejemplo que puedes editar o eliminar.",
-        start: createDateWithTime(now, 7, 0).toISOString(), // 7:00 AM
-        end: createDateWithTime(now, 8, 0).toISOString(), // 8:00 AM
+        start: createWeekDate(0, 7, 0), // Lunes 7:00 AM
+        end: createWeekDate(0, 8, 0), // Lunes 8:00 AM
         all_day: false,
         location: "Campus UN",
         calendar: calendar.$id,
-        etiquette: etiquettes[4].$id,
+        etiquette: etiquettes[4].$id, // Personal
       },
       {
         title: "Clase Programación (Ejemplo)",
         description: "Ejemplo de clase - Introducción a Python. Agrega aquí tus horarios de clases reales.",
-        start: new Date(tomorrow.getTime() + 10 * 60 * 60 * 1000).toISOString(),
-        end: new Date(tomorrow.getTime() + 13 * 60 * 60 * 1000).toISOString(),
+        start: createWeekDate(0, 8, 0), // Lunes 8:00 AM
+        end: createWeekDate(0, 10, 0), // Lunes 10:00 AM
         all_day: false,
         location: "Aula de Informática 205",
         calendar: calendar.$id,
-        etiquette: etiquettes[0].$id,
-      },
-      {
-        title: "Entrega Quiz Matemáticas (Ejemplo)",
-        description: "Ejemplo de quiz rápido - 30 minutos. Reemplaza con tus evaluaciones reales.",
-        start: new Date(tomorrow.getTime() + 14 * 60 * 60 * 1000).toISOString(),
-        end: new Date(tomorrow.getTime() + 14.5 * 60 * 60 * 1000).toISOString(),
-        all_day: false,
-        location: "Aula 302",
-        calendar: calendar.$id,
-        etiquette: etiquettes[1].$id, // Tareas
+        etiquette: etiquettes[0].$id, // Clases
       },
       {
         title: "Tarea Física (Ejemplo)",
         description: "Ejemplo de tarea - Resolver ejercicios del capítulo 5. Reemplaza con tus tareas reales.",
-        start: new Date(dayAfterTomorrow.getTime() + 14 * 60 * 60 * 1000).toISOString(),
-        end: new Date(dayAfterTomorrow.getTime() + 15 * 60 * 60 * 1000).toISOString(),
+        start: createWeekDate(0, 14, 0), // Lunes 2:00 PM
+        end: createWeekDate(0, 15, 0), // Lunes 3:00 PM
         all_day: false,
         calendar: calendar.$id,
         etiquette: etiquettes[1].$id, // Tareas
@@ -150,18 +147,28 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Laboratorio Química (Ejemplo)",
         description: "Ejemplo de laboratorio - Práctica de titulación. Personaliza con tus horarios.",
-        start: new Date(dayAfterTomorrow.getTime() + 16 * 60 * 60 * 1000).toISOString(),
-        end: new Date(dayAfterTomorrow.getTime() + 17 * 60 * 60 * 1000).toISOString(),
+        start: createWeekDate(1, 10, 0), // Martes 10:00 AM
+        end: createWeekDate(1, 12, 0), // Martes 12:00 PM
         all_day: false,
         location: "Laboratorio 101",
         calendar: calendar.$id,
         etiquette: etiquettes[0].$id, // Clases
       },
       {
+        title: "Entrega Quiz Matemáticas (Ejemplo)",
+        description: "Ejemplo de quiz rápido - 30 minutos. Reemplaza con tus evaluaciones reales.",
+        start: createWeekDate(1, 11, 0), // Martes 11:00 AM
+        end: createWeekDate(1, 11, 30), // Martes 11:30 AM
+        all_day: false,
+        location: "Aula 302",
+        calendar: calendar.$id,
+        etiquette: etiquettes[1].$id, // Tareas
+      },
+      {
         title: "Parcial Cálculo Diferencial (Ejemplo)",
         description: "Ejemplo de parcial - Temas: Derivadas y aplicaciones. Personaliza con tus materias y fechas reales.",
-        start: new Date(threeDaysLater.getTime() + 11 * 60 * 60 * 1000).toISOString(),
-        end: new Date(threeDaysLater.getTime() + 13 * 60 * 60 * 1000).toISOString(),
+        start: createWeekDate(2, 8, 0), // Miércoles 8:00 AM
+        end: createWeekDate(2, 10, 0), // Miércoles 10:00 AM
         all_day: false,
         location: "Aula 101 - Edificio de Matemáticas",
         calendar: calendar.$id,
@@ -170,8 +177,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Revisar Correos UN (Ejemplo)",
         description: "Ejemplo de tarea corta - Revisar correo institucional. Personaliza con tus actividades.",
-        start: new Date(threeDaysLater.getTime() + 14 * 60 * 60 * 1000).toISOString(),
-        end: new Date(threeDaysLater.getTime() + 14.25 * 60 * 60 * 1000).toISOString(),
+        start: createWeekDate(2, 13, 0), // Miércoles 1:00 PM
+        end: createWeekDate(2, 13, 15), // Miércoles 1:15 PM
         all_day: false,
         calendar: calendar.$id,
         etiquette: etiquettes[1].$id, // Tareas
@@ -179,8 +186,8 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Entrega Ensayo Historia (Ejemplo)",
         description: "Ejemplo de entrega - Ensayo sobre la Independencia. Reemplaza con tus trabajos.",
-        start: new Date(fourDaysLater.getTime() + 12 * 60 * 60 * 1000).toISOString(),
-        end: new Date(fourDaysLater.getTime() + 12.5 * 60 * 60 * 1000).toISOString(),
+        start: createWeekDate(3, 9, 0), // Jueves 9:00 AM
+        end: createWeekDate(3, 9, 30), // Jueves 9:30 AM
         all_day: false,
         location: "Oficina Profesores",
         calendar: calendar.$id,
@@ -189,8 +196,9 @@ export default async ({ req, res, log, error }) => {
       {
         title: "Entrega Proyecto Final (Ejemplo)",
         description: "Ejemplo de fecha límite para entregar proyecto final. Recordar subir a la plataforma virtual. Puedes editar este evento con tus propias fechas.",
-        start: new Date(fourDaysLater.getTime() + 16 * 60 * 60 * 1000).toISOString(),
-        end: new Date(fourDaysLater.getTime() + 17 * 60 * 60 * 1000).toISOString(),
+        start: createWeekDate(4, 10, 0), // Viernes 10:00 AM
+        end: createWeekDate(4, 11, 0), // Viernes 11:00 AM
+        all_day: false,
         calendar: calendar.$id,
         etiquette: etiquettes[2].$id, // Proyectos
       },
@@ -198,9 +206,9 @@ export default async ({ req, res, log, error }) => {
 
     const events = await Promise.all(
       eventsData.map(data => 
-        databases.createDocument(
+        databases.createRow(
           DATABASE_ID,
-          EVENTS_COLLECTION_ID,
+          CALENDAR_EVENTS_TABLE_ID,
           ID.unique(),
           data,
           [

@@ -137,25 +137,6 @@ export default async ({ req, res, log, error }) => {
         etiquette: etiquettes[0].$id, // Clases
       },
       {
-        title: "Tarea Física (Ejemplo)",
-        description: "Ejemplo de tarea - Resolver ejercicios del capítulo 5. Reemplaza con tus tareas reales.",
-        start: createWeekDate(0, 14, 0), // Lunes 2:00 PM
-        end: createWeekDate(0, 15, 0), // Lunes 3:00 PM
-        all_day: false,
-        calendar: calendar.$id,
-        etiquette: etiquettes[1].$id, // Tareas
-      },
-      {
-        title: "Laboratorio Química (Ejemplo)",
-        description: "Ejemplo de laboratorio - Práctica de titulación. Personaliza con tus horarios.",
-        start: createWeekDate(1, 10, 0), // Martes 10:00 AM
-        end: createWeekDate(1, 12, 0), // Martes 12:00 PM
-        all_day: false,
-        location: "Laboratorio 101",
-        calendar: calendar.$id,
-        etiquette: etiquettes[0].$id, // Clases
-      },
-      {
         title: "Entrega Quiz Matemáticas (Ejemplo)",
         description: "Ejemplo de quiz rápido - 30 minutos. Reemplaza con tus evaluaciones reales.",
         start: createWeekDate(1, 11, 0), // Martes 11:00 AM
@@ -174,25 +155,6 @@ export default async ({ req, res, log, error }) => {
         location: "Aula 101 - Edificio de Matemáticas",
         calendar: calendar.$id,
         etiquette: etiquettes[3].$id, // Parciales
-      },
-      {
-        title: "Revisar Correos UN (Ejemplo)",
-        description: "Ejemplo de tarea corta - Revisar correo institucional. Personaliza con tus actividades.",
-        start: createWeekDate(2, 13, 0), // Miércoles 1:00 PM
-        end: createWeekDate(2, 13, 15), // Miércoles 1:15 PM
-        all_day: false,
-        calendar: calendar.$id,
-        etiquette: etiquettes[1].$id, // Tareas
-      },
-      {
-        title: "Entrega Ensayo Historia (Ejemplo)",
-        description: "Ejemplo de entrega - Ensayo sobre la Independencia. Reemplaza con tus trabajos.",
-        start: createWeekDate(3, 9, 0), // Jueves 9:00 AM
-        end: createWeekDate(3, 9, 30), // Jueves 9:30 AM
-        all_day: false,
-        location: "Oficina Profesores",
-        calendar: calendar.$id,
-        etiquette: etiquettes[1].$id, // Tareas
       },
       {
         title: "Entrega Proyecto Final (Ejemplo)",
